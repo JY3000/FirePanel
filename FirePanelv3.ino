@@ -1,74 +1,86 @@
 #include <FastLED.h>
+# include <SPI.h>
+# include <SdFat.h>
+# include <SFEMP3Shield.h>
 
 /* NeoPixel Shield data pin is always 6. Change for other boards */
-#define CONTROL_PIN1 1
+#define CONTROL_PIN1 1                                // Turning on pin 1; code will be sent through pin
 
-#define CONTROL_PIN2 2
-//#define CONTROL_PIN3 3
+#define CONTROL_PIN2 2                                // Turning on pin 2; code will be sent through pin
+#define CONTROL_PIN3 3                                // Turning on pin 3; code will be sent through pin
 
-/* Board shape and size configuration. Sheild is 8x5, 40 pixels */
-#define HEIGHT 16
-#define WIDTH 32
-#define NUM_LEDS HEIGHT*WIDTH
-int BRIGHTNESS = 60;
-int count = 0 ;
-int StartTime = 0 ; 
-int EndTime = 0 ; 
-int ElapsedTime = 0 ; 
-int HOT = 360 ;
+/* Board shape a nd size configuration. Sheild is 8x5, 40 pixels */
+#define HEIGHT 16                                     // number of leds "height" wise, but is technically the width of our fire
+#define WIDTH 32                                      // number of leds "width" wise, but is technically the height of our fire
+#define NUM_LEDS HEIGHT*WIDTH                         // Total # of leds
+/*Setting these values to integer allows us to create code that will change the brightness and height of fire gradually*/
+int BRIGHTNESS = 10;                                  // set initial brightness value and making it a variable instead of a constant
+int count = 0 ;                                       // set initial counting time and making it a variable instead of a constant
+int StartTime = 0 ;                                   // set initial start time and making it a variable instead of a constant
+int EndTime = 0 ;                                     // set initial end time and making it a variable instead of a constant
+int ElapsedTime = 0 ;                                 // set initial elapsed time and making it a variable instead of a constant
+int HOT = 360 ;                                       // set initial "HOT" value and making it a variable instead of a constant; best start is 360
 
-CRGB leds[NUM_LEDS];
-CRGBPalette16 gPal;
+SdFat sd;                                             //create object to handle SD functions
+SFEMP3Shield MP3player;                               // Create Mp3 library object
+// These variables used in MP3 initialization to set up
+uint8_t volume = 0;                             // MP3 Player volume 0=max, 255=lowest(off)
+const uint16_t monoMode = 1;                          // Mono setting 0=off, 3=max
+int triggerpin = 4;                                   // set input pin for MP3 File
+
+CRGB leds[NUM_LEDS];                                  // How many leds to give palette to
+CRGBPalette16 gPal;                                   // Color is chosen to a palette aalready in the FastLED library (color palette "gpal" defined below)
 
 void setup() {
+  // MP3 Trigger:
+{
+  pinMode (triggerpin, INPUT);
+}
+  //LEDs:
   FastLED.addLeds<NEOPIXEL, CONTROL_PIN1>(leds, NUM_LEDS);
   
   FastLED.addLeds<NEOPIXEL, CONTROL_PIN2>(leds, NUM_LEDS);
-  //FastLED.addLeds<NEOPIXEL, CONTROL_PIN3>(leds, NUM_LEDS);
+  FastLED.addLeds<NEOPIXEL, CONTROL_PIN3>(leds, NUM_LEDS);
 
   /*FastLED.setBrightness(BRIGHTNESS);*/
   
   /* Set a black-body radiation palette
      This comes from FastLED */
-  gPal = HeatColors_p; 
+  gPal = HeatColors_p;                                // Color palete variable is defined here
   
   /* Clear display before starting */
-  FastLED.clear();
-  FastLED.show();
-  FastLED.delay(1500);                                // Sanity before start
+  FastLED.clear();                                    // Clears the leds and display
+  FastLED.show();                                     // updates all controllers with color palette
+  FastLED.delay(1500);                                // Sanity before start; gives a delay before beginning program
 }
 
 /* Refresh rate. Higher makes for flickerier
    Recommend small values for small displays */
-#define FPS 17
-#define FPS_DELAY 1000/FPS
+#define FPS 25                                        // orignially 17; this value will change speed at 
+#define FPS_DELAY 1000/FPS                            // delay between each frame
 
 void loop() {
-  random16_add_entropy( random() );                   // We chew a lot of entropy
+  random16_add_entropy( random() );                   // Add entropy to random number generator; we use a lot of it
 StartTime = millis() ; 
-if ((BRIGHTNESS < 60) && (millis() % 100 == 0)) {
+if (BRIGHTNESS <= 60 && millis() % 100 == 0)
+{
   BRIGHTNESS++;
 }
-if (BRIGHTNESS > 60) {
-  BRIGHTNESS = 60;                                    //Change value as needed; this is the value at which the brightness will stop increasing
-}
-  FastLED.setBrightness(BRIGHTNESS);
 
- StartTime = millis() ; 
-if ((HOT > 270) && (millis() % 100 == 0)) {
-  HOT--;                                             //Change value as needed; this is the value at which the height will stop increasing
-}
+  FastLED.setBrightness(BRIGHTNESS);                  // Sets the brightness of panel
 
-if (HOT < 270) {
-  HOT = 270;
+ StartTime = millis() ;                               // the start time is equal to the # of seconds since the program started
+if (HOT >= 270 && millis() % 100 == 0)
+{
+  HOT--;                                              // Change value as needed; this is the value at which the height will stop increasing
 }
 
   Fireplace();
-EndTime = millis();
-ElapsedTime = EndTime - StartTime ;
+EndTime = millis();                                   // end time is equal to the # of seconds since the program started
+ElapsedTime = EndTime - StartTime ;                   // elapsed time is equal to the difference of the time elapsed (EndTime) and the start time
 
-  FastLED.show();
-  FastLED.delay(FPS_DELAY); //
+  FastLED.show();                                     // updates all controllers with the new variable values
+  FastLED.delay(FPS_DELAY);                           // delay before starting program
 
 }
 
@@ -86,8 +98,8 @@ void Fireplace () {
   CRGB stack[WIDTH][HEIGHT];                        // stacks that are cooler
  
   // 1. Generate sparks to re-heat
-  for( int i = 0; i < WIDTH; i++) {
-    if (spark[i] < HOT ) {
+  for( int i = 0; i < WIDTH; i++) {                 // sets "i" as an variable starting at 0, if i is maller than the width value, increass it by 1
+    if (spark[i] < HOT ) {                          // 
       int base = HOT * 2;
       spark[i] = random16( base, MAXHOT );
     }
@@ -112,8 +124,8 @@ void Fireplace () {
       /* The next higher pixel will be "cooler", so calculate
          the drop */
       unsigned int drop = random8(0,HOT);
-      if (drop > heat) heat = 0;                    // avoid wrap-arounds from going "negative"
-      else heat -= drop;
+      if (drop > heat) heat = 0;                    // avoid wrap-arounds from going "negative"; if the drop is greater than the heat value, heat will be equal to 0
+      else heat -= drop;                            // or else heat will heat = heat minus drop
  
       heat = constrain(heat, 0, MAXHOT);
     }
@@ -126,4 +138,18 @@ void Fireplace () {
   }
   }
   for( int count = 0; count++;);
+}
+
+// MP3 Shield:
+void MP3() {
+  {
+    MP3player.setVolume(volume, volume); //sets volume with 1st and 2nd parameters the left and right channels respectively
+    digitalWrite(4, LOW); // turns pin 4 on
+    // if loop to increase volume as time goes on
+    if (millis() % 100 == 0)
+    {
+      volume++;
+    }
+  }
+MP3();
 }
