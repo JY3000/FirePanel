@@ -1,7 +1,4 @@
 #include <FastLED.h>
-# include <SPI.h>
-# include <SdFat.h>
-# include <SFEMP3Shield.h>
 
 /* NeoPixel Shield data pin is always 6. Change for other boards */
 #define CONTROL_PIN1 1                                // Turning on pin 1; code will be sent through pin
@@ -21,26 +18,18 @@ int EndTime = 0 ;                                     // set initial end time an
 int ElapsedTime = 0 ;                                 // set initial elapsed time and making it a variable instead of a constant
 int HOT = 360 ;                                       // set initial "HOT" value and making it a variable instead of a constant; best start is 360
 
-SdFat sd;                                             //create object to handle SD functions
-SFEMP3Shield MP3player;                               // Create Mp3 library object
-// These variables used in MP3 initialization to set up
-uint8_t volume = 0;                             // MP3 Player volume 0=max, 255=lowest(off)
-const uint16_t monoMode = 1;                          // Mono setting 0=off, 3=max
-int triggerpin = 4;                                   // set input pin for MP3 File
-
 CRGB leds[NUM_LEDS];                                  // How many leds to give palette to
 CRGBPalette16 gPal;                                   // Color is chosen to a palette aalready in the FastLED library (color palette "gpal" defined below)
 
 void setup() {
-  // MP3 Trigger:
-{
-  pinMode (triggerpin, INPUT);
-}
+  //MP3:
+  pinMode(6,OUTPUT);
   //LEDs:
   FastLED.addLeds<NEOPIXEL, CONTROL_PIN1>(leds, NUM_LEDS);
   
   FastLED.addLeds<NEOPIXEL, CONTROL_PIN2>(leds, NUM_LEDS);
   FastLED.addLeds<NEOPIXEL, CONTROL_PIN3>(leds, NUM_LEDS);
+  digitalWrite(6,LOW);
 
   /*FastLED.setBrightness(BRIGHTNESS);*/
   
@@ -62,7 +51,7 @@ void setup() {
 void loop() {
   random16_add_entropy( random() );                   // Add entropy to random number generator; we use a lot of it
 StartTime = millis() ; 
-if (BRIGHTNESS <= 60 && millis() % 100 == 0)
+if (BRIGHTNESS <= 60 && millis() % 1000 == 0)
 {
   BRIGHTNESS++;
 }
@@ -70,7 +59,7 @@ if (BRIGHTNESS <= 60 && millis() % 100 == 0)
   FastLED.setBrightness(BRIGHTNESS);                  // Sets the brightness of panel
 
  StartTime = millis() ;                               // the start time is equal to the # of seconds since the program started
-if (HOT >= 270 && millis() % 100 == 0)
+if (HOT >= 270 && millis() % 1000 == 0)
 {
   HOT--;                                              // Change value as needed; this is the value at which the height will stop increasing
 }
@@ -138,18 +127,4 @@ void Fireplace () {
   }
   }
   for( int count = 0; count++;);
-}
-
-// MP3 Shield:
-void MP3() {
-  {
-    MP3player.setVolume(volume, volume); //sets volume with 1st and 2nd parameters the left and right channels respectively
-    digitalWrite(4, LOW); // turns pin 4 on
-    // if loop to increase volume as time goes on
-    if (millis() % 100 == 0)
-    {
-      volume++;
-    }
-  }
-MP3();
 }
