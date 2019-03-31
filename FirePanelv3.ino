@@ -1,10 +1,21 @@
 #include <FastLED.h>
+#include "ESP8266.h"
+
+// Connect to wahoo
+#define SSID        "wahoo"
+#define PASSWORD    ""
+
+// Setup ESP
+// Pin 7 is TX on adapter; 6 is RX on adapter
+// Adapter takes 5V in VCC
+SoftwareSerial esp(7,6);
+ESP8266 wifi(esp);
 
 /* NeoPixel Shield data pin is always 6. Change for other boards */
 #define CONTROL_PIN1 1                                // Turning on pin 1; code will be sent through pin
 
 #define CONTROL_PIN2 2                                // Turning on pin 2; code will be sent through pin
-#define CONTROL_PIN3 3                                // Turning on pin 3; code will be sent through pin
+#define CONTROL_PIN3 4                                // Turning on pin 4; code will be sent through pin
 
 /* Board shape a nd size configuration. Sheild is 8x5, 40 pixels */
 #define HEIGHT 16                                     // number of leds "height" wise, but is technically the width of our fire
@@ -23,13 +34,13 @@ CRGBPalette16 gPal;                                   // Color is chosen to a pa
 
 void setup() {
   //MP3:
-  pinMode(6,OUTPUT);
+  pinMode(6,OUTPUT);                                  // Sets pin 6 as output
   //LEDs:
   FastLED.addLeds<NEOPIXEL, CONTROL_PIN1>(leds, NUM_LEDS);
   
   FastLED.addLeds<NEOPIXEL, CONTROL_PIN2>(leds, NUM_LEDS);
   FastLED.addLeds<NEOPIXEL, CONTROL_PIN3>(leds, NUM_LEDS);
-  digitalWrite(6,LOW);
+  digitalWrite(6,LOW);                                // turns pin 6 "LOW"; turns it on
 
   /*FastLED.setBrightness(BRIGHTNESS);*/
   
@@ -48,6 +59,9 @@ void setup() {
 #define FPS 25                                        // orignially 17; this value will change speed at 
 #define FPS_DELAY 1000/FPS                            // delay between each frame
 
+
+
+
 void loop() {
   random16_add_entropy( random() );                   // Add entropy to random number generator; we use a lot of it
 StartTime = millis() ; 
@@ -63,8 +77,10 @@ if (HOT >= 270 && millis() % 1000 == 0)
 {
   HOT--;                                              // Change value as needed; this is the value at which the height will stop increasing
 }
-
+if (wifi.getPuzzleStatus("TIM"))
+{
   Fireplace();
+}
 EndTime = millis();                                   // end time is equal to the # of seconds since the program started
 ElapsedTime = EndTime - StartTime ;                   // elapsed time is equal to the difference of the time elapsed (EndTime) and the start time
 
@@ -72,6 +88,9 @@ ElapsedTime = EndTime - StartTime ;                   // elapsed time is equal t
   FastLED.delay(FPS_DELAY);                           // delay before starting program
 
 }
+
+
+
 
 /* Rate of cooling. Play with to change fire from
    roaring (smaller values) to weak (larger values) */
